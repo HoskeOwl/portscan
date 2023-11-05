@@ -11,15 +11,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TestChackerOk struct{}
+type TestCheckerOk struct{}
 
-func (t TestChackerOk) Check(_ string, _ time.Duration) error {
+func (t TestCheckerOk) Check(_ string, _ time.Duration) error {
 	return nil
 }
 
-type TestChackerErr struct{}
+type TestCheckerErr struct{}
 
-func (t TestChackerErr) Check(_ string, _ time.Duration) error {
+func (t TestCheckerErr) Check(_ string, _ time.Duration) error {
 	return fmt.Errorf("test error")
 }
 
@@ -28,7 +28,7 @@ func TestTaskOk(t *testing.T) {
 	port := 33
 	storage := ctxstorage.CtxStorage{}
 	ctx := context.WithValue(context.Background(), ctxstorage.StorageKey, storage)
-	task := task.ScanTask{Ip: ip, Port: port, Checker: &TestChackerOk{}}
+	task := task.ScanTask{Ip: ip, Port: port, Checker: &TestCheckerOk{}}
 	assert.Equal(t, task.Status(), "waiting")
 	task.Do(ctx)
 	assert.Equal(t, task.Status(), "success")
@@ -40,7 +40,7 @@ func TestTaskFail(t *testing.T) {
 	port := 33
 	storage := ctxstorage.CtxStorage{}
 	ctx := context.WithValue(context.Background(), ctxstorage.StorageKey, storage)
-	task := task.ScanTask{Ip: ip, Port: port, Checker: &TestChackerOk{}}
+	task := task.ScanTask{Ip: ip, Port: port, Checker: &TestCheckerErr{}}
 	assert.Equal(t, task.Status(), "waiting")
 	task.Do(ctx)
 	assert.Equal(t, task.Status(), "fail")
@@ -50,7 +50,7 @@ func TestTaskFail(t *testing.T) {
 func TestTaskConnString(t *testing.T) {
 	ip := "5.5.5.5"
 	port := 555
-	task := task.ScanTask{Ip: ip, Port: port, Checker: &TestChackerOk{}}
+	task := task.ScanTask{Ip: ip, Port: port, Checker: &TestCheckerOk{}}
 	exp := fmt.Sprintf("%v:%v", ip, port)
 	assert.Equal(t, task.ConnStr(), exp)
 }

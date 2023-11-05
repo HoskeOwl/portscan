@@ -33,8 +33,9 @@ func checkPanic(err error) {
 var rootCmd = &cobra.Command{
 	Use:   "portscan",
 	Short: "Simple port scaner",
-	Long: `Fast port scanner for huge amount of ports.
-Do not send data, just check if can connect.
+	Long: `Fast port scanner with parallel execution.
+Do not send data, just check connection.
+Support json output format.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		portRanges, err := cmd.Flags().GetString("port")
@@ -115,7 +116,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringP("port", "p", "", "Port or range. Can be several ranges/ports. Example: '2,80:100,8080'")
+	rootCmd.Flags().StringP("port", "p", "", fmt.Sprintf("Port or range. Can be several ranges/ports. Example: '2%v80%v100%v8080'", helper.RangesSeparator, helper.PortRangeSeparator, helper.RangesSeparator))
 	rootCmd.Flags().StringP("dst", "d", defaultHost, "Destination address")
 	rootCmd.Flags().IntP("timeout", "t", defaultTimeoutMs, "Timeout in milliseconds for each connection")
 	rootCmd.Flags().IntP("connections", "c", defaultConnectionsCount, "Connection pool")
