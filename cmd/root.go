@@ -5,12 +5,14 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	ctxstorage "github.com/HoskeOwl/portscan/internal/ctx_storage"
 	"github.com/HoskeOwl/portscan/internal/helper"
+	"github.com/HoskeOwl/portscan/internal/version"
 	"github.com/HoskeOwl/portscan/internal/worker"
 	"github.com/spf13/cobra"
 )
@@ -23,49 +25,62 @@ const (
 	defaultVerbose          bool   = false
 )
 
-func checkPanic(err error) {
-	if err != nil {
-		panic(err)
+func checkCmdError(cmd *cobra.Command, err error) {
+	if err == nil {
+		return
 	}
+	cmd.Println(err)
+	cmd.Println(cmd.UsageString())
+	os.Exit(1)
 }
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "portscan",
-	Short: "Simple port scaner",
+// RootCmd represents the base command when called without any subcommands
+var RootCmd = &cobra.Command{
+	SilenceErrors: true,
+	Use:           "portscan",
+	Short:         "Simple port scaner",
 	Long: `Fast port scanner with parallel execution.
 Do not send data, just check connection.
 Support json output format.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		v, err := cmd.Flags().GetBool("version")
+		checkCmdError(cmd, err)
+		if !v {
+			fmt.Println(version.BuildVersion())
+			os.Exit(0)
+		}
+
 		portRanges, err := cmd.Flags().GetString("port")
-		checkPanic(err)
+		checkCmdError(cmd, err)
 		if portRanges == "" {
-			panic(fmt.Errorf("wrong port range format: '%v'", portRanges))
+			fmt.Printf("wrong port range format: '%v'\n", portRanges)
+			cmd.Println(cmd.UsageString())
+			os.Exit(1)
 		}
 		parsedPortRanges, err := helper.ParsePortRanges(portRanges)
-		checkPanic(err)
+		checkCmdError(cmd, err)
 
 		host, err := cmd.Flags().GetString("dst")
-		checkPanic(err)
+		checkCmdError(cmd, err)
 
 		timeoutMs, err := cmd.Flags().GetInt("timeout")
-		checkPanic(err)
+		checkCmdError(cmd, err)
 
 		connections, err := cmd.Flags().GetInt("connections")
-		checkPanic(err)
+		checkCmdError(cmd, err)
 
 		retries, err := cmd.Flags().GetInt("retries")
-		checkPanic(err)
+		checkCmdError(cmd, err)
 
 		verbose, err := cmd.Flags().GetBool("verbose")
-		checkPanic(err)
+		checkCmdError(cmd, err)
 
 		sort, err := cmd.Flags().GetBool("sort")
-		checkPanic(err)
+		checkCmdError(cmd, err)
 
 		json, err := cmd.Flags().GetBool("json")
-		checkPanic(err)
+		checkCmdError(cmd, err)
 
 		storage := ctxstorage.CtxStorage{
 			ConnDuration: time.Duration(timeoutMs * int(time.Millisecond)),
@@ -109,19 +124,22 @@ Support json output format.
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
+	err := RootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
 	}
 }
 
+var ErrSilent = errors.New("ErrSilent")
+
 func init() {
-	rootCmd.Flags().StringP("port", "p", "", fmt.Sprintf("Port or range. Can be several ranges/ports. Example: '2%v80%v100%v8080'", helper.RangesSeparator, helper.PortRangeSeparator, helper.RangesSeparator))
-	rootCmd.Flags().StringP("dst", "d", defaultHost, "Destination address")
-	rootCmd.Flags().IntP("timeout", "t", defaultTimeoutMs, "Timeout in milliseconds for each connection")
-	rootCmd.Flags().IntP("connections", "c", defaultConnectionsCount, "Connection pool")
-	rootCmd.Flags().IntP("retries", "r", defaultRetries, "How many times check unavailable port")
-	rootCmd.Flags().BoolP("verbose", "v", false, "Print failed ports")
-	rootCmd.Flags().BoolP("sort", "s", false, "Sort output ports (print when checks all)")
-	rootCmd.Flags().BoolP("json", "j", false, "Json output (ignore -v and -s)")
+	RootCmd.Flags().BoolP("version", "v", false, "Print program version and exit")
+	RootCmd.Flags().StringP("port", "p", "", fmt.Sprintf("Port or range. Can be several ranges/ports. Example: '2%v80%v100%v8080'", helper.RangesSeparator, helper.PortRangeSeparator, helper.RangesSeparator))
+	RootCmd.Flags().StringP("dst", "d", defaultHost, "Destination address")
+	RootCmd.Flags().IntP("timeout", "t", defaultTimeoutMs, "Timeout in milliseconds for each connection")
+	RootCmd.Flags().IntP("connections", "c", defaultConnectionsCount, "Connection pool")
+	RootCmd.Flags().IntP("retries", "r", defaultRetries, "How many times check unavailable port")
+	RootCmd.Flags().BoolP("verbose", "b", false, "Print failed ports")
+	RootCmd.Flags().BoolP("sort", "s", false, "Sort output ports (print when checks all)")
+	RootCmd.Flags().BoolP("json", "j", false, "Json output (ignore -v and -s)")
 }
