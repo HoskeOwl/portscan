@@ -76,7 +76,7 @@ Support json output format.
 		verbose, err := cmd.Flags().GetBool("verbose")
 		checkCmdError(cmd, err)
 
-		sort, err := cmd.Flags().GetBool("sort")
+		realtime, err := cmd.Flags().GetBool("realtime")
 		checkCmdError(cmd, err)
 
 		json, err := cmd.Flags().GetBool("json")
@@ -92,10 +92,10 @@ Support json output format.
 		switch {
 		case json:
 			hooker = worker.MakeJsonResultProcessor()
-		case sort:
-			hooker = worker.MakeSortedResultProcessor()
-		default:
+		case realtime:
 			hooker = worker.MakeRealtimeResultProcessor()
+		default:
+			hooker = worker.MakeSortedResultProcessor()
 		}
 
 		ctx := context.Background()
@@ -140,6 +140,6 @@ func init() {
 	RootCmd.Flags().IntP("connections", "c", defaultConnectionsCount, "Connection pool")
 	RootCmd.Flags().IntP("retries", "r", defaultRetries, "How many times check unavailable port")
 	RootCmd.Flags().BoolP("verbose", "b", false, "Print failed ports")
-	RootCmd.Flags().BoolP("sort", "s", false, "Sort output ports (print when checks all)")
+	RootCmd.Flags().BoolP("realtime", "e", false, "Print result in realtime (without sorting)")
 	RootCmd.Flags().BoolP("json", "j", false, "Json output (ignore -v and -s)")
 }
