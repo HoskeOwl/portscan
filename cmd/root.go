@@ -46,7 +46,7 @@ Support json output format.
 	Run: func(cmd *cobra.Command, args []string) {
 		v, err := cmd.Flags().GetBool("version")
 		checkCmdError(cmd, err)
-		if !v {
+		if v {
 			fmt.Println(version.BuildVersion())
 			os.Exit(0)
 		}
