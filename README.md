@@ -7,6 +7,7 @@ Support Json output
 
 ## Usage:
 ```
+Usage:
   portscan [flags]
 
 Flags:
@@ -15,8 +16,9 @@ Flags:
   -h, --help              help for portscan
   -j, --json              Json output (ignore -v and -s)
   -p, --port string       Port or range. Can be several ranges/ports. Example: '2,80-100,8080'
+  -e, --realtime          Print result in realtime (without sorting)
   -r, --retries int       How many times check unavailable port (default 2)
-  -s, --sort              Sort output ports (print when checks all)
   -t, --timeout int       Timeout in milliseconds for each connection (default 1000)
-  -v, --verbose           Print failed ports
+  -b, --verbose           Print failed ports
+  -v, --version           Print program version and exit
 ```
