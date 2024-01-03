@@ -8,10 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	ctxstorage "github.com/HoskeOwl/portscan/internal/ctx_storage"
 	"github.com/HoskeOwl/portscan/internal/helper"
+	"github.com/HoskeOwl/portscan/internal/task"
 	"github.com/HoskeOwl/portscan/internal/version"
 	"github.com/HoskeOwl/portscan/internal/worker"
 	"github.com/spf13/cobra"
@@ -84,18 +86,18 @@ Support json output format.
 
 		storage := ctxstorage.CtxStorage{
 			ConnDuration: time.Duration(timeoutMs * int(time.Millisecond)),
-			Retries:      retries,
+			MaxRunCnt:    retries + 1,
 			Verbose:      verbose,
 		}
 
-		var hooker worker.ResultProcessor
+		var hooker worker.ResultHook
 		switch {
 		case json:
-			hooker = worker.MakeJsonResultProcessor()
+			hooker = worker.MakeJsonResultHook()
 		case realtime:
-			hooker = worker.MakeRealtimeResultProcessor()
+			hooker = worker.MakeRealtimeResultHook()
 		default:
-			hooker = worker.MakeSortedResultProcessor()
+			hooker = worker.MakeSortedResultHook()
 		}
 
 		ctx := context.Background()
@@ -110,8 +112,16 @@ Support json output format.
 		if len(scanTasks) < connections {
 			connections = len(scanTasks)
 		}
-		pool := worker.MakePool(ctx, scanTasks, connections).WithSuccessHook(hooker.Success).WithFailHook(hooker.Fail)
-		pool.Execute(ctx)
+
+		tq := worker.MakeWorkQueue(scanTasks)
+		rq := make(chan task.ScanTask)
+		var workerWg *sync.WaitGroup
+		var resultWg *sync.WaitGroup
+		workerWg = worker.MakeWorkers(ctx, connections, tq, rq)
+		resultWg = worker.RunResultProcessor(ctx, rq, hooker)
+		workerWg.Wait()
+		close(rq)
+		resultWg.Wait()
 
 		elapsed := time.Since(start)
 		hooker.Print(ctx)

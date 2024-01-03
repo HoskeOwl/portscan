@@ -12,7 +12,7 @@ const StorageKey MyKey = "key"
 
 type CtxStorage struct {
 	ConnDuration time.Duration
-	Retries      int
+	MaxRunCnt    int
 	Verbose      bool
 }
 
